@@ -1,5 +1,5 @@
 from threading import Thread
-from time import sleep
+from time import sleep, time
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -16,6 +16,7 @@ class MainWindow(QWidget):
         self.run_btn.move(100, 10)
         self.test_btn.clicked.connect(self.add_object)
         self.run_btn.clicked.connect(self.start)
+        self.running = False
 
         self.panel = GeneralPanel(self)
 
@@ -25,6 +26,8 @@ class MainWindow(QWidget):
 
         self.objects = []
 
+        self.thread = Thread(target=self.run)
+
     def add_object(self):
         new_label = GameObject(self.canvas)
         new_label.show()
@@ -33,17 +36,22 @@ class MainWindow(QWidget):
 
     def start(self):
         print 'start'
-        t = Thread(target=self.run)
-        t.start()
+        if self.running:
+            self.thread.join()
+        else:
+            self.thread.start()
+        self.running = not self.running
 
     def run(self):
-        for i in range(1500):
+        last_time = time()
+        for i in range(150):
             print 'tik'
-            delta_time = 0.002
-            sleep(delta_time)
+            sleep(0.02)
+            delta_time = time() - last_time
             for obj in self.objects:
                 obj.execute(delta_time)
                 obj.update(delta_time)
+            last_time = time()
 
     def hide_panel(self):
         for i in self.objects:
@@ -75,8 +83,9 @@ class GameObject(QLabel):
         self.setPixmap(QPixmap("./object.jpg"))
         self.resize(50, 50)
         self.setScaledContents(1)
-        self.move(40, 40)
+        self.move(500, 500)
         self.vel = (0, 0)
+        self.start = True
 
         self.panel = ControlPanel(self.parent.parent, self)
 
@@ -91,7 +100,9 @@ class GameObject(QLabel):
         if len(str(self.panel.file_path.text())) == 0:
             return
         print len(str(self.panel.file_path.text()))
+        start = self.start
         execfile(str(self.panel.file_path.text()))
+        self.start = False
 
     def update(self, delta_time):
         self.move(self.x() + self.vel[0]*delta_time, self.y() + self.vel[1]*delta_time)
