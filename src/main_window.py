@@ -1,3 +1,6 @@
+from threading import Thread
+from time import sleep
+
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
@@ -8,8 +11,11 @@ class MainWindow(QWidget):
 
         self.canvas = Canvas(self)
         self.test_btn = QPushButton("Add Object", self)
+        self.run_btn = QPushButton("RUN", self)
         self.test_btn.move(10, 10)
+        self.run_btn.move(100, 10)
         self.test_btn.clicked.connect(self.add_object)
+        self.run_btn.clicked.connect(self.start)
 
         self.setWindowTitle('Simple')
 
@@ -22,6 +28,18 @@ class MainWindow(QWidget):
         new_label.show()
         self.canvas.update()
         self.objects.append(new_label)
+
+    def start(self):
+        print 'start'
+        t = Thread(target=self.run)
+        t.start()
+
+    def run(self):
+        for i in range(1500):
+            print 'tik'
+            sleep(0.002)
+            for obj in self.objects:
+                obj.execute()
 
     def hide_panel(self):
         for i in self.objects:
@@ -57,19 +75,37 @@ class GameObject(QLabel):
         self.panel = ControlPanel(self.parent.parent, self)
 
     def mousePressEvent(self, event):
-        print 'fuck'
+        self.parent.parent.hide_panel()
         self.panel.show()
+
+    def moveRight(self):
+        self.move(self.x() + 1, self.y())
+
+    def moveDown(self):
+        self.move(self.x(), self.y() + 1)
+
+    def moveLeft(self):
+        self.move(self.x() - 1, self.y())
+
+    def moveUp(self):
+        self.move(self.x(), self.y() - 1)
+
+    def execute(self):
+        if len(str(self.panel.file_path.text())) == 0:
+            return
+        print len(str(self.panel.file_path.text()))
+        execfile(str(self.panel.file_path.text()))
 
 
 class ControlPanel(QWidget):
     def __init__(self, parent, game_label):
         super(ControlPanel, self).__init__(parent)
         self.setGeometry(0, 0, 1000, 50)
-        self.move(100, 10)
+        self.move(200, 0)
         self.game_label = game_label
         layout = QHBoxLayout()
 
-        self.file_path = QLineEdit()
+        self.file_path = QLineEdit("./obj1.py")
         self.x_val = QLineEdit("10")
         self.x_val.setPlaceholderText("X:")
         self.x_val.textChanged.connect(self.on_text_changed)
@@ -83,4 +119,4 @@ class ControlPanel(QWidget):
         self.setLayout(layout)
 
     def on_text_changed(self):
-        self.game_label.move(int(self.x_val.text()),int(self.y_val.text()))
+        self.game_label.move(int(self.x_val.text()), int(self.y_val.text()))
