@@ -17,6 +17,8 @@ class MainWindow(QWidget):
         self.test_btn.clicked.connect(self.add_object)
         self.run_btn.clicked.connect(self.start)
 
+        self.panel = GeneralPanel(self)
+
         self.setWindowTitle('Simple')
 
         self.setGeometry(0, 0, 1400, 700)
@@ -37,13 +39,16 @@ class MainWindow(QWidget):
     def run(self):
         for i in range(1500):
             print 'tik'
-            sleep(0.002)
+            delta_time = 0.002
+            sleep(delta_time)
             for obj in self.objects:
-                obj.execute()
+                obj.execute(delta_time)
+                obj.update(delta_time)
 
     def hide_panel(self):
         for i in self.objects:
             i.panel.hide()
+        self.panel.show()
 
 
 class Canvas(QLabel):
@@ -56,7 +61,7 @@ class Canvas(QLabel):
                            "background-color:white;")
         self.setFrameStyle((QFrame.StyledPanel | QFrame.Plain))
         self.setGeometry(0, 0, 1380, 600)
-        self.move(10, 50)
+        self.move(10, 100)
 
     def mousePressEvent(self, event):
         self.parent.hide_panel()
@@ -71,6 +76,7 @@ class GameObject(QLabel):
         self.resize(50, 50)
         self.setScaledContents(1)
         self.move(40, 40)
+        self.vel = (0, 0)
 
         self.panel = ControlPanel(self.parent.parent, self)
 
@@ -78,29 +84,44 @@ class GameObject(QLabel):
         self.parent.parent.hide_panel()
         self.panel.show()
 
-    def moveRight(self):
-        self.move(self.x() + 1, self.y())
+    def go(self, x, y):
+        self.move(self.x() + x*1000, self.y() + y*1000)
 
-    def moveDown(self):
-        self.move(self.x(), self.y() + 1)
-
-    def moveLeft(self):
-        self.move(self.x() - 1, self.y())
-
-    def moveUp(self):
-        self.move(self.x(), self.y() - 1)
-
-    def execute(self):
+    def execute(self, delta_time):
         if len(str(self.panel.file_path.text())) == 0:
             return
         print len(str(self.panel.file_path.text()))
         execfile(str(self.panel.file_path.text()))
 
+    def update(self, delta_time):
+        self.move(self.x() + self.vel[0]*delta_time, self.y() + self.vel[1]*delta_time)
+        self.vel = (self.vel[0], self.vel[1]+self.parent.parent.gravity)
+
+
+class GeneralPanel(QWidget):
+    def __init__(self, parent):
+        super(GeneralPanel, self).__init__(parent)
+        self.parent = parent
+        self.setGeometry(0, 0, 1000, 70)
+        self.move(200, 0)
+        layout = QHBoxLayout()
+
+        self.gravity = QLineEdit("10")
+        self.parent.gravity = 10
+        self.gravity.setPlaceholderText("gravity:")
+        self.gravity.textChanged.connect(self.on_text_changed)
+
+        layout.addWidget(self.gravity)
+        self.setLayout(layout)
+
+    def on_text_changed(self):
+        self.parent.gravity = int(str(self.gravity.text()))
+
 
 class ControlPanel(QWidget):
     def __init__(self, parent, game_label):
         super(ControlPanel, self).__init__(parent)
-        self.setGeometry(0, 0, 1000, 50)
+        self.setGeometry(0, 0, 1000, 70)
         self.move(200, 0)
         self.game_label = game_label
         layout = QHBoxLayout()
@@ -120,3 +141,4 @@ class ControlPanel(QWidget):
 
     def on_text_changed(self):
         self.game_label.move(int(self.x_val.text()), int(self.y_val.text()))
+

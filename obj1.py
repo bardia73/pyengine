@@ -1,4 +1,4 @@
-if self.x() < 1000:
-    self.moveRight()
+if self.x() < 1000 or True:
+    self.go(1*delta_time, 0)
 else:
-    self.moveDown()
+    self.go(0, 1*delta_time)
